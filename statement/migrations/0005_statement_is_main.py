@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('statement', '0004_log'),
+        ("statement", "0004_log"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='statement',
-            name='is_main',
-            field=models.BooleanField(default=False, help_text='Indicates if this is the main statement of the thread'),
+            model_name="statement",
+            name="is_main",
+            field=models.BooleanField(
+                default=False,
+                help_text="Indicates if this is the main statement of the thread",
+            ),
         ),
     ]

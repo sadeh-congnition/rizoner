@@ -5,33 +5,78 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Statement',
+            name="Statement",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content', models.TextField(help_text='The core content of the statement')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "content",
+                    models.TextField(help_text="The core content of the statement"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='StatementRelationship',
+            name="StatementRelationship",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('relationship_type', models.CharField(blank=True, help_text="The type or nature of the relationship (e.g., 'supports', 'contradicts')", max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('source', models.ForeignKey(help_text='The statement from which the relationship originates', on_delete=django.db.models.deletion.CASCADE, related_name='source_relationships', to='statement.statement')),
-                ('target', models.ForeignKey(help_text='The statement to which the relationship points', on_delete=django.db.models.deletion.CASCADE, related_name='target_relationships', to='statement.statement')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "relationship_type",
+                    models.CharField(
+                        blank=True,
+                        help_text="The type or nature of the relationship (e.g., 'supports', 'contradicts')",
+                        max_length=255,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "source",
+                    models.ForeignKey(
+                        help_text="The statement from which the relationship originates",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="source_relationships",
+                        to="statement.statement",
+                    ),
+                ),
+                (
+                    "target",
+                    models.ForeignKey(
+                        help_text="The statement to which the relationship points",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="target_relationships",
+                        to="statement.statement",
+                    ),
+                ),
             ],
             options={
-                'constraints': [models.UniqueConstraint(fields=('source', 'target', 'relationship_type'), name='unique_statement_relationship')],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("source", "target", "relationship_type"),
+                        name="unique_statement_relationship",
+                    )
+                ],
             },
         ),
     ]

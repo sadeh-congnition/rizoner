@@ -5,22 +5,37 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('statement', '0003_statement_thread'),
+        ("statement", "0003_statement_thread"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Log',
+            name="Log",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('details', models.JSONField(help_text='The details of the log')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('thread', models.ForeignKey(help_text='The thread this log belongs to', on_delete=django.db.models.deletion.CASCADE, related_name='logs', to='statement.thread')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("details", models.JSONField(help_text="The details of the log")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "thread",
+                    models.ForeignKey(
+                        help_text="The thread this log belongs to",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="logs",
+                        to="statement.thread",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['created_at'],
+                "ordering": ["created_at"],
             },
         ),
     ]

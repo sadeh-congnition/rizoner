@@ -5,20 +5,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_llm_chat', '0001_initial'),
-        ('statement', '0001_initial'),
+        ("django_llm_chat", "0001_initial"),
+        ("statement", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Thread',
+            name="Thread",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('chat', models.ForeignKey(help_text='The LLM chat session this thread belongs to', on_delete=django.db.models.deletion.CASCADE, related_name='threads', to='django_llm_chat.chat')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "chat",
+                    models.ForeignKey(
+                        help_text="The LLM chat session this thread belongs to",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="threads",
+                        to="django_llm_chat.chat",
+                    ),
+                ),
             ],
         ),
     ]

@@ -5,15 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('statement', '0002_thread'),
+        ("statement", "0002_thread"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='statement',
-            name='thread',
-            field=models.ForeignKey(blank=True, help_text='The thread this statement was generated in', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='statements', to='statement.thread'),
+            model_name="statement",
+            name="thread",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="The thread this statement was generated in",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="statements",
+                to="statement.thread",
+            ),
         ),
     ]
