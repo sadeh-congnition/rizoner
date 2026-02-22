@@ -72,3 +72,30 @@ def test_rizui_cli_no_threads(test_client):
 
         assert result.exit_code == 0
         assert "No threads found." in result.output
+
+
+@pytest.mark.django_db
+def test_rizui_cli_add_thread(test_client):
+    def mock_requests_post(url, json=None, *args, **kwargs):
+        path = url.split("/api", 1)[1] if "/api" in url else url
+        if json:
+            response = test_client.post(path, json=json)
+        else:
+            response = test_client.post(path)
+        return DummyResponse(response)
+
+    with patch("requests.post", side_effect=mock_requests_post), \
+         patch("user_interface.management.commands.rizui.Prompt.ask", return_value="Test statement"):
+        runner = CliRunner()
+        result = runner.invoke(rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="/add-thread\n/quit\n")
+
+        assert result.exit_code == 0
+        assert "Successfully created thread" in result.output
+        
+        # Verify in DB
+        assert Thread.objects.count() == 1
+        thread = Thread.objects.first()
+        assert thread.statements.count() == 1
+        statement = thread.statements.first()
+        assert statement.content == "Test statement"
+        assert statement.is_main is True

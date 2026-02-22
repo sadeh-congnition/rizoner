@@ -11,6 +11,7 @@ console = Console()
 COMMANDS = {
     "/help": "Show a list of all available commands and a description of each.",
     "/threads": "Show a list of all available threads.",
+    "/add-thread": "Create a new thread with a main statement.",
     "/quit": "Exit the application.",
 }
 
@@ -58,6 +59,31 @@ def show_threads(api_url: str) -> None:
     console.print(table)
 
 
+def create_thread_interaction(api_url: str) -> None:
+    statement = Prompt.ask("Main Statement")
+    if not statement.strip():
+        console.print("[yellow]Statement cannot be empty.[/yellow]")
+        return
+
+    try:
+        # Create the thread
+        thread_resp = requests.post(f"{api_url}/api/statement/threads")
+        thread_resp.raise_for_status()
+        thread_data = thread_resp.json()
+        thread_id = thread_data.get("id")
+
+        # Create the main statement
+        stmt_resp = requests.post(
+            f"{api_url}/api/statement/threads/{thread_id}/statements",
+            json={"content": statement, "is_main": True}
+        )
+        stmt_resp.raise_for_status()
+
+        console.print(f"[bold green]Successfully created thread {thread_id} with the main statement.[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Failed to create thread or statement: {e}[/bold red]")
+
+
 @click.command()
 @click.option(
     "--api-url",
@@ -81,6 +107,8 @@ def command(api_url: str) -> None:
                     show_help()
                 elif cmd == "/threads":
                     show_threads(api_url)
+                elif cmd == "/add-thread":
+                    create_thread_interaction(api_url)
                 elif cmd in ("/quit", "/exit"):
                     console.print("[bold green]Goodbye![/bold green]")
                     sys.exit(0)

@@ -25,6 +25,10 @@ class Statement(models.Model):
         help_text="The thread this statement was generated in"
     )
     content = models.TextField(help_text="The core content of the statement")
+    is_main = models.BooleanField(
+        default=False,
+        help_text="Indicates if this is the main statement of the thread"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

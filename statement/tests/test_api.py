@@ -3,7 +3,7 @@ from ninja.testing import TestClient
 from model_bakery import baker
 
 from statement.api import router
-from statement.models import Thread
+from statement.models import Thread, Log
 from django_llm_chat.models import Chat
 
 
@@ -49,3 +49,45 @@ def test_create_thread(api_client):
     thread = Thread.objects.first()
     assert thread.id == data["id"]
     assert thread.chat_id == data["chat"]
+
+    # Verify log is created
+    log_count = Log.objects.count()
+    assert log_count == 1
+
+    log = Log.objects.first()
+    assert log.thread_id == thread.id
+    assert log.details["action"] == "Created"
+    assert log.details["entity_type"] == "New Thread"
+    assert log.details["entity_id"] == thread.id
+
+
+@pytest.mark.django_db
+def test_create_statement(api_client, setup_data):
+    thread = Thread.objects.first()
+    payload = {
+        "content": "This is a main statement.",
+        "is_main": True
+    }
+    response = api_client.post(f"/threads/{thread.id}/statements", json=payload)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["content"] == "This is a main statement."
+    assert data["is_main"] is True
+    assert data["thread"] == thread.id
+    
+    # Verify statement in db
+    from statement.models import Statement
+    statement = Statement.objects.filter(id=data["id"]).first()
+    assert statement is not None
+    assert statement.content == "This is a main statement."
+    
+    # Verify log is created for main statement
+    # Setup data created 3 threads, which in theory doesn't create logs because they are forced via baker,
+    # but let's just check the latest log.
+    log = Log.objects.order_by("-created_at").first()
+    assert log is not None
+    assert log.thread_id == thread.id
+    assert log.details["action"] == "Created"
+    assert log.details["entity_type"] == "Main Statement"
+    assert log.details["entity_id"] == statement.id
