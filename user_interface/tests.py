@@ -50,14 +50,13 @@ def test_rizui_cli_lists_threads(test_client):
     with patch("requests.get", side_effect=mock_requests_get):
         runner = CliRunner()
         result = runner.invoke(
-            rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="1\n"
+            rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="/threads\n"
         )
 
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
         assert "Available Threads" in result.output
         assert str(thread1.id) in result.output
         assert str(thread2.id) in result.output
-        assert f"You selected Thread {thread1.id}" in result.output
 
 
 @pytest.mark.django_db
@@ -69,7 +68,7 @@ def test_rizui_cli_no_threads(test_client):
 
     with patch("requests.get", side_effect=mock_requests_get):
         runner = CliRunner()
-        result = runner.invoke(rizui_command, ["--api-url", "http://127.0.0.1:8000"])
+        result = runner.invoke(rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="/threads\n")
 
         assert result.exit_code == 0
         assert "No threads found." in result.output
