@@ -132,6 +132,63 @@ def show_thread(api_url: str, thread_id: str) -> None:
     console.print()
 
 
+def configure_llms_on_startup(api_url: str) -> None:
+    try:
+        response = requests.get(f"{api_url}/api/configuration/llm-config")
+        response.raise_for_status()
+        configs = response.json()
+        if configs:
+            # Configurations already exist, skip prompting
+            return
+    except Exception as e:
+        console.print(
+            f"[bold red]Failed to check existing LLM configurations: {e}[/bold red]"
+        )
+        return
+
+    console.print("[bold yellow]LLM Configuration required.[/bold yellow]")
+    default_model = Prompt.ask("Enter the default LLM model name you want to use")
+
+    if not default_model.strip():
+        console.print("[yellow]Skipping configuration.[/yellow]")
+        return
+
+    tool_model = default_model
+    reasoning_model = default_model
+
+    separate = Prompt.ask(
+        "Do you want to set separate models for TOOL_CALLING_LLM_MODEL and REASONING_LLM_MODEL?",
+        choices=["y", "n"],
+        default="n",
+    )
+    if separate.lower() == "y":
+        tool_model = Prompt.ask("Enter TOOL_CALLING_LLM_MODEL", default=default_model)
+        reasoning_model = Prompt.ask("Enter REASONING_LLM_MODEL", default=default_model)
+
+    try:
+        for name, value in [
+            ("tool_calling_llm_model", tool_model),
+            ("reasoning_llm_model", reasoning_model),
+        ]:
+            resp = requests.post(
+                f"{api_url}/api/configuration/llm-config",
+                json={"name": name, "value": value},
+            )
+            resp.raise_for_status()
+
+        console.print("[bold green]LLM Configuration saved successfully![/bold green]")
+        console.print("\n[bold cyan]Next Steps for LLM Authentication:[/bold cyan]")
+        console.print(
+            "Please create a [bold].env[/bold] file with the required environment "
+            "variables to make LLM authentication work properly."
+        )
+        console.print("Since this app uses [bold]litellm[/bold], almost every LLM model and provider is supported.")
+        console.print("To learn what environment variables to set for your chosen model, please visit:")
+        console.print("[link=https://docs.litellm.ai/#basic-usage]https://docs.litellm.ai/#basic-usage[/link]\n")
+    except Exception as e:
+        console.print(f"[bold red]Failed to save LLM configuration: {e}[/bold red]")
+
+
 @click.command()
 @click.option(
     "--api-url",
@@ -141,6 +198,8 @@ def show_thread(api_url: str, thread_id: str) -> None:
 )
 def command(api_url: str) -> None:
     """A sample CLI command for rizui."""
+    configure_llms_on_startup(api_url)
+
     console.print(
         "Type [bold cyan]/help[/bold cyan] to see a list of available commands."
     )
