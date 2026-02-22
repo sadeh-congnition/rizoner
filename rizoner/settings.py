@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "statement",
     "django_llm_chat",
     "ai_models",
+    "configuration",
 ]
 
 MIDDLEWARE = [
