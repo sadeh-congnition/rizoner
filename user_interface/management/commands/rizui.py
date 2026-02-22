@@ -12,6 +12,7 @@ COMMANDS = {
     "/help": "Show a list of all available commands and a description of each.",
     "/threads": "Show a list of all available threads.",
     "/add-thread": "Create a new thread with a main statement.",
+    "/show-thread": "Show details of a specific thread, including its main statement. Alias: /st",
     "/quit": "Exit the application.",
 }
 
@@ -45,14 +46,12 @@ def show_threads(api_url: str) -> None:
     table = Table(title="Available Threads")
     table.add_column("Index", justify="right", style="cyan", no_wrap=True)
     table.add_column("Thread ID", style="magenta")
-    table.add_column("Chat ID", style="green")
     table.add_column("Created At", style="yellow")
 
     for idx, thread in enumerate(threads, start=1):
         table.add_row(
             str(idx),
             str(thread.get("id")),
-            str(thread.get("chat")),
             str(thread.get("created_at")),
         )
 
@@ -75,13 +74,62 @@ def create_thread_interaction(api_url: str) -> None:
         # Create the main statement
         stmt_resp = requests.post(
             f"{api_url}/api/statement/threads/{thread_id}/statements",
-            json={"content": statement, "is_main": True}
+            json={"content": statement, "is_main": True},
         )
         stmt_resp.raise_for_status()
 
-        console.print(f"[bold green]Successfully created thread {thread_id} with the main statement.[/bold green]")
+        console.print(
+            f"[bold green]Successfully created thread {thread_id} with the main statement.[/bold green]"
+        )
     except Exception as e:
         console.print(f"[bold red]Failed to create thread or statement: {e}[/bold red]")
+
+
+def show_thread(api_url: str, thread_id: str) -> None:
+    try:
+        thread_resp = requests.get(f"{api_url}/api/statement/threads/{thread_id}")
+        if thread_resp.status_code == 404:
+            console.print(f"[red]Thread {thread_id} not found.[/red]")
+            return
+        thread_resp.raise_for_status()
+        thread_data = thread_resp.json()
+
+        stmts_resp = requests.get(
+            f"{api_url}/api/statement/threads/{thread_id}/statements"
+        )
+        stmts_resp.raise_for_status()
+        statements = stmts_resp.json()
+    except Exception as e:
+        console.print(f"[bold red]Failed to fetch thread details: {e}[/bold red]")
+        return
+
+    main_statement = next((s for s in statements if s.get("is_main")), None)
+
+    table = Table(title=f"Thread {thread_data.get('id')} Details", show_header=False)
+    table.add_column("Key", style="cyan", justify="right")
+    table.add_column("Value", style="magenta")
+
+    table.add_row("Chat ID", str(thread_data.get("chat")))
+    table.add_row("Created At", str(thread_data.get("created_at")))
+    console.print(table)
+
+    if main_statement:
+        console.print(
+            f"\n[bold cyan]Main Statement:[/bold cyan] {main_statement.get('content')}"
+        )
+        console.print(f"[dim]Created At: {main_statement.get('created_at')}[/dim]")
+    else:
+        console.print("\n[yellow]No main statement found for this thread.[/yellow]")
+
+    other_statements = [s for s in statements if not s.get("is_main")]
+    if other_statements:
+        console.print("\n[bold]Other Statements:[/bold]")
+        for stmt in other_statements:
+            content = stmt.get("content")
+            if len(content) > 60:
+                content = content[:57] + "..."
+            console.print(f" - {content} [dim](ID: {stmt.get('id')})[/dim]")
+    console.print()
 
 
 @click.command()
@@ -109,6 +157,14 @@ def command(api_url: str) -> None:
                     show_threads(api_url)
                 elif cmd == "/add-thread":
                     create_thread_interaction(api_url)
+                elif cmd.startswith("/show-thread") or cmd.startswith("/st"):
+                    parts = cmd.split(" ", 1)
+                    if len(parts) == 2 and parts[1].strip():
+                        show_thread(api_url, parts[1].strip())
+                    else:
+                        console.print(
+                            "[yellow]Please provide a Thread ID. Usage: /show-thread <ID>[/yellow]"
+                        )
                 elif cmd in ("/quit", "/exit"):
                     console.print("[bold green]Goodbye![/bold green]")
                     sys.exit(0)
@@ -119,6 +175,6 @@ def command(api_url: str) -> None:
                     "[yellow]Commands must start with '/'. Type /help for a list of commands.[/yellow]"
                 )
 
-        except (KeyboardInterrupt, EOFError):
+        except KeyboardInterrupt, EOFError:
             console.print("\n[bold green]Goodbye![/bold green]")
             sys.exit(0)

@@ -16,6 +16,11 @@ def list_threads(request):
     return Thread.objects.all()
 
 
+@router.get("/threads/{thread_id}", response=ThreadSchema)
+def get_thread(request, thread_id: int):
+    return get_object_or_404(Thread, id=thread_id)
+
+
 @router.post("/threads", response=ThreadSchema)
 def create_thread(request):
     from django_llm_chat.chat import Chat as ChatService
@@ -46,6 +51,12 @@ class StatementOutSchema(ModelSchema):
     class Meta:
         model = Statement
         fields = ["id", "thread", "content", "is_main", "created_at", "updated_at"]
+
+
+@router.get("/threads/{thread_id}/statements", response=list[StatementOutSchema])
+def list_statements(request, thread_id: int):
+    thread = get_object_or_404(Thread, id=thread_id)
+    return thread.statements.all()
 
 
 @router.post("/threads/{thread_id}/statements", response=StatementOutSchema)
