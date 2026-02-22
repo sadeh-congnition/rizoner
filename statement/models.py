@@ -62,3 +62,20 @@ class StatementRelationship(models.Model):
 
     def __str__(self) -> str:
         return f"{self.source} -[{self.relationship_type}]-> {self.target}"
+
+
+class Log(models.Model):
+    thread = models.ForeignKey(
+        Thread,
+        on_delete=models.CASCADE,
+        related_name="logs",
+        help_text="The thread this log belongs to",
+    )
+    details = models.JSONField(help_text="The details of the log")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"Log {self.pk} for Thread {self.thread_id}"
