@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "user_interface",
     "statement",
     "django_llm_chat",
+    "ai_models",
 ]
 
 MIDDLEWARE = [
