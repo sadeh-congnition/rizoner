@@ -11,7 +11,7 @@ class GlobalLLMConfig(models.Model):
         max_length=255,
         choices=NameChoices.choices,
         unique=True,
-        help_text="Name of the global configuration"
+        help_text="Name of the global configuration",
     )
     value = models.TextField(help_text="Value for the configuration item")
 

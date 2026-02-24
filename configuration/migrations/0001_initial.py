@@ -4,23 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='GlobalLLMConfig',
+            name="GlobalLLMConfig",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('tool_calling_llm_model', 'Tool Calling LLM Model'), ('reasoning_llm_model', 'Reasoning LLM Model'), ('research_llm_model', 'Research LLM Model')], help_text='Name of the global configuration', max_length=255, unique=True)),
-                ('value', models.TextField(help_text='Value for the configuration item')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        choices=[
+                            ("tool_calling_llm_model", "Tool Calling LLM Model"),
+                            ("reasoning_llm_model", "Reasoning LLM Model"),
+                            ("research_llm_model", "Research LLM Model"),
+                        ],
+                        help_text="Name of the global configuration",
+                        max_length=255,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "value",
+                    models.TextField(help_text="Value for the configuration item"),
+                ),
             ],
             options={
-                'verbose_name': 'Global LLM Configuration',
-                'verbose_name_plural': 'Global LLM Configurations',
+                "verbose_name": "Global LLM Configuration",
+                "verbose_name_plural": "Global LLM Configurations",
             },
         ),
     ]

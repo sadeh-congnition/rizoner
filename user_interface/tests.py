@@ -1,9 +1,6 @@
 import pytest
 from unittest.mock import patch
 from click.testing import CliRunner
-from ninja import NinjaAPI
-from ninja.testing import TestClient
-from statement.api import router as statement_router
 from statement.models import Thread
 from django_llm_chat.models import Chat
 from model_bakery import baker
@@ -23,15 +20,6 @@ class DummyResponse:
             raise Exception("HTTP Error")
 
 
-test_api = NinjaAPI(urls_namespace="test_client_ns")
-test_api.add_router("/statement/", statement_router)
-
-
-@pytest.fixture(scope="session")
-def test_client():
-    return TestClient(test_api)
-
-
 @pytest.mark.django_db
 def test_rizui_cli_lists_threads(test_client):
     try:
@@ -47,7 +35,10 @@ def test_rizui_cli_lists_threads(test_client):
         response = test_client.get(path)
         return DummyResponse(response)
 
-    with patch("requests.get", side_effect=mock_requests_get):
+    with (
+        patch("requests.get", side_effect=mock_requests_get),
+        patch("user_interface.management.commands.rizui.configure_llms_on_startup"),
+    ):
         runner = CliRunner()
         result = runner.invoke(
             rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="/threads\n"
@@ -66,7 +57,10 @@ def test_rizui_cli_no_threads(test_client):
         response = test_client.get(path)
         return DummyResponse(response)
 
-    with patch("requests.get", side_effect=mock_requests_get):
+    with (
+        patch("requests.get", side_effect=mock_requests_get),
+        patch("user_interface.management.commands.rizui.configure_llms_on_startup"),
+    ):
         runner = CliRunner()
         result = runner.invoke(
             rizui_command, ["--api-url", "http://127.0.0.1:8000"], input="/threads\n"
@@ -88,16 +82,13 @@ def test_rizui_cli_add_thread(test_client):
 
     with (
         patch("requests.post", side_effect=mock_requests_post),
-        patch(
-            "user_interface.management.commands.rizui.Prompt.ask",
-            return_value="Test statement",
-        ),
+        patch("user_interface.management.commands.rizui.configure_llms_on_startup"),
     ):
         runner = CliRunner()
         result = runner.invoke(
             rizui_command,
             ["--api-url", "http://127.0.0.1:8000"],
-            input="/add-thread\n/quit\n",
+            input="/add-thread\nTest statement\n/quit\n",
         )
 
         assert result.exit_code == 0
@@ -106,6 +97,7 @@ def test_rizui_cli_add_thread(test_client):
         # Verify in DB
         assert Thread.objects.count() == 1
         thread = Thread.objects.first()
+        assert thread.statements
         assert thread.statements.count() == 1
         statement = thread.statements.first()
         assert statement.content == "Test statement"

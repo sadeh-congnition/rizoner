@@ -1,10 +1,20 @@
 import sys
 
 import djclick as click
-import requests
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
+
+from user_interface.backend_logic import (
+    check_llm_config,
+    create_statement,
+    create_thread,
+    fetch_statements,
+    fetch_thread,
+    fetch_threads,
+    save_llm_configs,
+    verify_llm_auth_connection,
+)
 
 console = Console()
 
@@ -13,6 +23,7 @@ COMMANDS = {
     "/threads": "Show a list of all available threads.",
     "/add-thread": "Create a new thread with a main statement.",
     "/show-thread": "Show details of a specific thread, including its main statement. Alias: /st",
+    "/test-llm-auth": "Test functionality of the underlying LLM auth using configured API key/URL.",
     "/quit": "Exit the application.",
 }
 
@@ -32,9 +43,7 @@ def show_help():
 
 def show_threads(api_url: str) -> None:
     try:
-        response = requests.get(f"{api_url}/api/statement/threads")
-        response.raise_for_status()
-        threads = response.json()
+        threads = fetch_threads(api_url)
     except Exception as e:
         console.print(f"[bold red]Failed to fetch threads from API: {e}[/bold red]")
         return
@@ -66,17 +75,11 @@ def create_thread_interaction(api_url: str) -> None:
 
     try:
         # Create the thread
-        thread_resp = requests.post(f"{api_url}/api/statement/threads")
-        thread_resp.raise_for_status()
-        thread_data = thread_resp.json()
+        thread_data = create_thread(api_url)
         thread_id = thread_data.get("id")
 
         # Create the main statement
-        stmt_resp = requests.post(
-            f"{api_url}/api/statement/threads/{thread_id}/statements",
-            json={"content": statement, "is_main": True},
-        )
-        stmt_resp.raise_for_status()
+        create_statement(api_url, thread_id, statement, is_main=True)
 
         console.print(
             f"[bold green]Successfully created thread {thread_id} with the main statement.[/bold green]"
@@ -87,18 +90,12 @@ def create_thread_interaction(api_url: str) -> None:
 
 def show_thread(api_url: str, thread_id: str) -> None:
     try:
-        thread_resp = requests.get(f"{api_url}/api/statement/threads/{thread_id}")
-        if thread_resp.status_code == 404:
+        thread_data = fetch_thread(api_url, thread_id)
+        if not thread_data:
             console.print(f"[red]Thread {thread_id} not found.[/red]")
             return
-        thread_resp.raise_for_status()
-        thread_data = thread_resp.json()
 
-        stmts_resp = requests.get(
-            f"{api_url}/api/statement/threads/{thread_id}/statements"
-        )
-        stmts_resp.raise_for_status()
-        statements = stmts_resp.json()
+        statements = fetch_statements(api_url, thread_id)
     except Exception as e:
         console.print(f"[bold red]Failed to fetch thread details: {e}[/bold red]")
         return
@@ -132,11 +129,28 @@ def show_thread(api_url: str, thread_id: str) -> None:
     console.print()
 
 
+def test_llm_auth_interaction(api_url: str) -> None:
+    console.print("[yellow]Testing LLM Authentication...[/yellow]")
+    try:
+        data = verify_llm_auth_connection(api_url)
+        if data.get("error"):
+            console.print(f"[bold red]LLM Auth Test Failed:[/bold red] {data['error']}")
+        else:
+            console.print(
+                "[bold green]LLM Auth Test Successful![/bold green] "
+                + data.get("message", "")
+            )
+            if data.get("answer"):
+                console.print(
+                    f"\n[bold cyan]LLM Answer:[/bold cyan] {data['answer']}\n"
+                )
+    except Exception as e:
+        console.print(f"[bold red]Failed to run LLM auth test:[/bold red] {e}")
+
+
 def configure_llms_on_startup(api_url: str) -> None:
     try:
-        response = requests.get(f"{api_url}/api/configuration/llm-config")
-        response.raise_for_status()
-        configs = response.json()
+        configs = check_llm_config(api_url)
         if configs:
             # Configurations already exist, skip prompting
             return
@@ -166,15 +180,13 @@ def configure_llms_on_startup(api_url: str) -> None:
         reasoning_model = Prompt.ask("Enter REASONING_LLM_MODEL", default=default_model)
 
     try:
-        for name, value in [
-            ("tool_calling_llm_model", tool_model),
-            ("reasoning_llm_model", reasoning_model),
-        ]:
-            resp = requests.post(
-                f"{api_url}/api/configuration/llm-config",
-                json={"name": name, "value": value},
-            )
-            resp.raise_for_status()
+        save_llm_configs(
+            api_url,
+            [
+                ("tool_calling_llm_model", tool_model),
+                ("reasoning_llm_model", reasoning_model),
+            ],
+        )
 
         console.print("[bold green]LLM Configuration saved successfully![/bold green]")
         console.print("\n[bold cyan]Next Steps for LLM Authentication:[/bold cyan]")
@@ -182,9 +194,20 @@ def configure_llms_on_startup(api_url: str) -> None:
             "Please create a [bold].env[/bold] file with the required environment "
             "variables to make LLM authentication work properly."
         )
-        console.print("Since this app uses [bold]litellm[/bold], almost every LLM model and provider is supported.")
-        console.print("To learn what environment variables to set for your chosen model, please visit:")
-        console.print("[link=https://docs.litellm.ai/#basic-usage]https://docs.litellm.ai/#basic-usage[/link]\n")
+        console.print(
+            "Since this app uses [bold]litellm[/bold], almost every LLM model and provider is supported."
+        )
+        console.print(
+            "To learn what environment variables to set for your chosen model, please visit:"
+        )
+        console.print(
+            "[link=https://docs.litellm.ai/#basic-usage]https://docs.litellm.ai/#basic-usage[/link]\n"
+        )
+        console.print(
+            "[bright_yellow]Once you create the .env file and set the correct "
+            "variable names, you should invoke the /test-llm-auth command to test "
+            "the connection.[/bright_yellow]\n"
+        )
     except Exception as e:
         console.print(f"[bold red]Failed to save LLM configuration: {e}[/bold red]")
 
@@ -224,6 +247,8 @@ def command(api_url: str) -> None:
                         console.print(
                             "[yellow]Please provide a Thread ID. Usage: /show-thread <ID>[/yellow]"
                         )
+                elif cmd == "/test-llm-auth":
+                    test_llm_auth_interaction(api_url)
                 elif cmd in ("/quit", "/exit"):
                     console.print("[bold green]Goodbye![/bold green]")
                     sys.exit(0)

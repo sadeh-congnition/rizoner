@@ -1,15 +1,26 @@
 import pytest
-from ninja.testing import TestClient
 from model_bakery import baker
 
-from statement.api import router
 from statement.models import Thread, Log
 from django_llm_chat.models import Chat
 
 
 @pytest.fixture
-def api_client():
-    return TestClient(router)
+def api_client(test_client):
+    class Wrapper:
+        def get(self, path, **kwargs):
+            return test_client.get(f"/statement{path}", **kwargs)
+
+        def post(self, path, **kwargs):
+            return test_client.post(f"/statement{path}", **kwargs)
+
+        def delete(self, path, **kwargs):
+            return test_client.delete(f"/statement{path}", **kwargs)
+
+        def put(self, path, **kwargs):
+            return test_client.put(f"/statement{path}", **kwargs)
+
+    return Wrapper()
 
 
 @pytest.fixture

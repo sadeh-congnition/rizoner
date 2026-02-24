@@ -24,6 +24,7 @@ dev = [
     "django-stubs>=5.2.9",
     "flake8>=7.3.0",
     "model-bakery>=1.23.3",
+    "pyright>=1.1.408",
     "pytest>=9.0.2",
     "pytest-django>=4.12.0",
     "ruff>=0.15.2",
